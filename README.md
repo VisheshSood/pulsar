@@ -46,7 +46,7 @@ open -g 'pulsar://panel'
 ## Build and install
 
 ```bash
-git clone https://github.com/<you>/pulsar.git && cd pulsar
+git clone https://github.com/VisheshSood/pulsar.git && cd pulsar
 ./build.sh --install        # build, sign, copy to /Applications and launch
 ```
 
