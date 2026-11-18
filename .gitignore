@@ -1,0 +1,16 @@
+# Build output
+.build/
+*.app
+dist/
+*.xcodeproj/xcuserdata/
+.swiftpm/
+
+# Local-only material (never published)
+private/
+
+# Tool environments and generated reports
+tools/**/.venv/
+tools/beat-harness/*report.html
+__pycache__/
+
+.DS_Store

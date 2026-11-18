@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Pulsar Beat Bench</title>
+<style>
+:root{--bg:#fafaf9;--fg:#1c1917;--muted:#78716c;--line:#e7e5e4;--card:#fff;--onc:#7c3aed;--tc:#16a34a;--sec:#f5f5f4}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#0c0a09;--fg:#f5f5f4;--muted:#a8a29e;--line:#292524;--card:#1c1917;--onc:#a78bfa;--tc:#4ade80;--sec:#171412}}
+:root[data-theme=dark]{--bg:#0c0a09;--fg:#f5f5f4;--muted:#a8a29e;--line:#292524;--card:#1c1917;--onc:#a78bfa;--tc:#4ade80;--sec:#171412}
+body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.5 -apple-system,system-ui,sans-serif}
+main{max-width:1100px;margin:0 auto;padding:24px 16px}
+h1{font-size:20px;margin:0 0 4px}.sub{color:var(--muted);margin:0 0 20px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-bottom:20px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px}
+.card h2{font-size:13px;margin:0 0 6px;color:var(--muted)}.big{font-size:26px;font-weight:600}.muted{color:var(--muted)}
+.scroll{overflow-x:auto;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px}
+svg text{fill:var(--muted);font-size:11px}
+table{border-collapse:collapse;width:100%;margin-top:20px;background:var(--card);border:1px solid var(--line)}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums}
+th{font-weight:600;font-size:12px;color:var(--muted)}
+.zoom{margin:12px 0;display:flex;gap:8px;align-items:center;color:var(--muted)}
+</style></head><body><main>
+<h1>__TITLE__</h1>
+<p class="sub">Pulsar's kick detector (40–120 Hz log-energy flux, adaptive median + k·MAD threshold). Each tick is one detected beat.</p>
+<div class="cards" id="cards"></div>
+<div class="zoom">Zoom <input type="range" id="zoom" min="20" max="200" value="60"> <span id="zv"></span></div>
+<div class="scroll"><svg id="tl"></svg></div>
+<div id="tables"></div>
+</main>
+<script>
+const D=/*__DATA__*/null, $=s=>document.getElementById(s);
+const s=D.score;
+$('cards').innerHTML=(s?`<div class="card"><h2>Kicks caught</h2><div class="big">${Math.round(s.recall*100)}%</div><div class="muted">${s.hits} of ${s.truth}</div></div>
+<div class="card"><h2>Precision</h2><div class="big">${Math.round(s.precision*100)}%</div><div class="muted">${s.detected-s.hits} false beats</div></div>`:'')
++`<div class="card"><h2>Beats detected</h2><div class="big">${D.beats.length}</div><div class="muted">sensitivity k = ${D.k}</div></div>`;
+function draw(){
+  const pps=+$('zoom').value; $('zv').textContent=pps+' px/s';
+  const W=Math.max(600,D.dur*pps+40), H=D.truth?210:160, X=t=>20+t*pps, svg=[];
+  D.sections.forEach((r,i)=>svg.push(`<rect x="${X(r[0])}" y="0" width="${(r[1]-r[0])*pps}" height="${H}" fill="${i%2?'var(--sec)':'transparent'}"/><text x="${X(r[0])+4}" y="12">${r[2]}</text>`));
+  for(let t=0;t<=D.dur;t+=5)svg.push(`<line x1="${X(t)}" x2="${X(t)}" y1="16" y2="${H-14}" stroke="var(--line)"/><text x="${X(t)+2}" y="${H-2}">${t}s</text>`);
+  const ticks=(arr,yy,c,lab)=>{svg.push(`<text x="${X(0)}" y="${yy-4}">${lab}</text>`);arr.forEach(t=>svg.push(`<line x1="${X(t)}" x2="${X(t)}" y1="${yy}" y2="${yy+22}" stroke="${c}" stroke-width="2"/>`))};
+  let y=34; if(D.truth){ticks(D.truth,y,'var(--tc)','Ground truth');y+=44}
+  let p='';D.flux.forEach((v,i)=>{p+=(i?'L':'M')+X(i*D.step).toFixed(1)+' '+(y+40-Math.min(v,1.2)/1.2*40).toFixed(1)});
+  svg.push(`<path d="${p}" fill="none" stroke="var(--onc)" stroke-width="1" opacity=".6"/>`);
+  ticks(D.beats,y+44,'var(--onc)','Onset flux and detected beats');
+  $('tl').setAttribute('width',W);$('tl').setAttribute('height',H);$('tl').innerHTML=svg.join('');
+}
+$('zoom').oninput=draw;draw();
+let t='';
+if(D.sec)t+='<table><tr><th>Section</th><th>Kicks</th><th>Caught</th><th>False</th></tr>'+D.sec.map(r=>`<tr><td>${r.name}</td><td>${r.truth}</td><td>${r.hits}</td><td>${r.detected-r.hits}</td></tr>`).join('')+'</table>';
+if(D.sweep.length)t+='<table><tr><th>Sensitivity k</th><th>Recall</th><th>Precision</th><th>F1</th></tr>'+D.sweep.map(r=>`<tr><td>${r.k}</td><td>${Math.round(r.recall*100)}%</td><td>${Math.round(r.precision*100)}%</td><td>${r.f1.toFixed(2)}</td></tr>`).join('')+'</table>';
+$('tables').innerHTML=t;
+</script></body></html>
